@@ -22,7 +22,7 @@
 #define ADDR3 PB2
 #define ADDR4 PB3
 
-#define ST_IDDLE 0
+#define ST_IDLE 0
 #define ST_REC_ADDR 1
 #define ST_REC_DATA 2
 #define ST_IGNORE 3
@@ -31,12 +31,11 @@
 #define ST_SEND_2 2
 #define ST_SEND_DATA 3
 
-
 #define LOW 0
 #define HIGH 1
 
 uint8_t address = 0;			// Endereço como variável global (0 se master)
-uint8_t state = ST_IDDLE;		// Estado da máquina de estados
+uint8_t state = ST_IDLE;		// Estado da máquina de estados
 uint8_t prev_led_state_1 = LOW;	// Estado anterior do led 1
 uint8_t prev_led_state_2 = LOW;	// Estado anterior do led 2
 
@@ -64,6 +63,11 @@ void writeLED_H(){
 
 void writeLED_L(){
 	PORTB &= ~(1<<LED); 
+}
+
+void writeLED(uint8_t is_high){
+	if (is_high) writeLED_H();
+	else writeLED_L();
 }
 
 uint8_t readButton1(){
@@ -137,7 +141,34 @@ void sendSlave2(uint8_t button){
 
 // ############## SLAVE #######################
 
-ISR (USART_RX_vect){
+ISR(USART_RX_vect){
+
+	unsigned char status, is_address, resultl;
+	/* Wait for data to be received */
+	while (!(UCSR0A & (1<<RXC0)));
+
+	/* Get status and 9th bit, then data */
+	/* from buffer */
+	status = UCSR0A;
+	is_address = UCSR0B;
+	resultl = UDR0;
+
+	/* If error, ... */
+	if (status & ((1<<FE0)|(1<<DOR0)|(1<<UPE0))){}
+
+	if (is_address){
+		if (resultl == address){
+			state = ST_REC_DATA;
+		}
+		else {
+			state = ST_IGNORE;
+		}
+	}
+	else {
+		if (state == ST_REC_DATA){
+			writeLED(resultl);
+		}
+	}
 
 }
 
@@ -167,12 +198,18 @@ void main() {
 		}
 	}
 	else {
-		state = ST_IDDLE;
+		state = ST_IDLE;
 		while(1){
 			switch (state){
-				case ST_IDDLE:
+				case ST_IDLE:
 					break;
-				//case ST
+				case ST_IGNORE:
+					break;
+				case ST_REC_DATA:
+					break;
+				default:
+					state = ST_IDLE;
+					break;
 			}
 		}
 	}
