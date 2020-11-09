@@ -40,7 +40,6 @@ uint8_t state = ST_IDDLE;		// Estado da máquina de estados
 uint8_t prev_led_state_1 = LOW;	// Estado anterior do led 1
 uint8_t prev_led_state_2 = LOW;	// Estado anterior do led 2
 
-{
 void init_usart(){
 	// definir baudrate
 	UBRR0H = (uint8_t)(UBBR_VAL>>8);
@@ -79,16 +78,6 @@ void readAddress(){
 	address = PINB & ((1<<ADDR1) | (1<<ADDR2) | (1<<ADDR3) | (1<<ADDR4));
 }
 
-void sendSlave1(uint8_t button){
-
-	state = ST_SEND_1;
-}
-
-void sendSlave2(uint8_t button){
-	// Envia trama de endereço
-	state = ST_SEND_2;
-}
-
 void setup() {
 	// Outputs
 	DDRB |= (1<<LED);
@@ -103,15 +92,26 @@ void setup() {
 	init_usart();
 	sei();
 }
+
+// ############## MASTER #######################
+
+void transmitMessage(uint8_t is_address, uint8_t value){
+	// https://forum.arduino.cc/index.php?topic=102071.0
+	/* Wait for empty transmit buffer */
+	while (!(UCSR0A & (1<<UDRE0)));
+	/* Copy 9th bit to TXB8 */
+	UCSR0B &= ~(1<<TXB80);
+	if(is_address){
+		UCSR0B |= (1<<TXB80);
+	}
+	/* Put data into buffer, sends the data */
+	UDR0 = value;
 }
 
-ISR (USART_RX_vect){
-
-}
-
+/*
 ISR (USART_TX_vect){
 	if (ST_SEND_1){
-		
+		transmitMessage(0, button1);
 		state = ST_SEND_DATA;
 	}
 	else if (ST_SEND_2){
@@ -121,6 +121,24 @@ ISR (USART_TX_vect){
 	else if (ST_SEND_DATA){
 
 	}
+}*/
+
+void sendSlave1(uint8_t button){
+	transmitMessage(1,1);
+	state = ST_SEND_1;
+	transmitMessage(0,button);
+}
+
+void sendSlave2(uint8_t button){
+	transmitMessage(1,2);
+	state = ST_SEND_2;
+	transmitMessage(0,button);
+}
+
+// ############## SLAVE #######################
+
+ISR (USART_RX_vect){
+
 }
 
 void main() {
@@ -133,10 +151,12 @@ void main() {
 			button1 = readButton1();
 			button2 = readButton2();
 			
+			/*
 			if (state == ST_SEND_DATA || state == ST_SEND_1 || state == ST_SEND_2){
 
 			}
-			else if (button1 != prev_led_state_1){
+			else */
+			if (button1 != prev_led_state_1){
 				sendSlave1(button1);
 				prev_led_state_1 = button1;
 			}
@@ -152,7 +172,7 @@ void main() {
 			switch (state){
 				case ST_IDDLE:
 					break;
-				case ST
+				//case ST
 			}
 		}
 	}
