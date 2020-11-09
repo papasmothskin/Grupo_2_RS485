@@ -100,9 +100,9 @@ void setup() {
 // ############## MASTER #######################
 
 void transmitMessage(uint8_t is_address, uint8_t value){
-	// https://forum.arduino.cc/index.php?topic=102071.0
 	/* Wait for empty transmit buffer */
 	while (!(UCSR0A & (1<<UDRE0)));
+
 	/* Copy 9th bit to TXB8 */
 	UCSR0B &= ~(1<<TXB80);
 	if(is_address){
@@ -141,9 +141,9 @@ void sendSlave2(uint8_t button){
 
 // ############## SLAVE #######################
 
-ISR(USART_RX_vect){
+ISR (USART_RX_vect){
 
-	unsigned char status, is_address, resultl;
+	unsigned char status, is_address, result;
 	/* Wait for data to be received */
 	while (!(UCSR0A & (1<<RXC0)));
 
@@ -151,13 +151,15 @@ ISR(USART_RX_vect){
 	/* from buffer */
 	status = UCSR0A;
 	is_address = UCSR0B;
-	resultl = UDR0;
+	result = UDR0;
 
 	/* If error, ... */
-	if (status & ((1<<FE0)|(1<<DOR0)|(1<<UPE0))){}
+	if (status & ((1<<FE0)|(1<<DOR0)|(1<<UPE0))){
+		return;
+	}
 
 	if (is_address){
-		if (resultl == address){
+		if (result == address){
 			state = ST_REC_DATA;
 		}
 		else {
@@ -166,10 +168,10 @@ ISR(USART_RX_vect){
 	}
 	else {
 		if (state == ST_REC_DATA){
-			writeLED(resultl);
+			writeLED(result);
 		}
+		state = ST_IDLE;
 	}
-
 }
 
 void main() {
