@@ -139,6 +139,10 @@ void sendSlave2(uint8_t button){
 	transmitMessage(0,button);
 }
 
+void enableWrite(){
+	PORTC |= (1 << WRITE_ENABLE);
+}
+
 // ############## SLAVE #######################
 
 ISR (USART_RX_vect){
@@ -174,12 +178,18 @@ ISR (USART_RX_vect){
 	}
 }
 
+void enableRead(){
+	PORTC &= ~(1 << WRITE_ENABLE);
+}
+
+
 void main() {
 	setup();
 	
 	if (address == 0){
 		uint8_t button1;
 		uint8_t button2;
+		enableWrite();
 		while(1){
 			button1 = readButton1();
 			button2 = readButton2();
@@ -201,6 +211,7 @@ void main() {
 	}
 	else {
 		state = ST_IDLE;
+		enableRead();
 		while(1){
 			switch (state){
 				case ST_IDLE:
