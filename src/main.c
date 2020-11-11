@@ -46,14 +46,14 @@ void init_usart(){
 
 	UCSR0A = (1<<MPCM0); // Modo multiprocessor
 
-	UCSR0C = (3<<UCSZ00) | (3<<UPM00) | (0<<USBS0); // 8-bits, paridade impar, 1 stop bit
+	UCSR0C = (7<<UCSZ00) | (3<<UPM00) | (0<<USBS0); // 9-bits, paridade impar, 1 stop bit
 
 	// ler primeiro o endereço para ver se é cliente ou servidor
 	if (address > 0){
-		UCSR0B = (1<<RXCIE0) | (1<<RXEN0) | (1<<RXB80); // Aceita receção, e leitura 9º bit
+		UCSR0B = (1<<RXCIE0) | (1<<RXEN0); // Aceita receção, e leitura 9º bit
 	}
 	else{
-		UCSR0B = (1<<TXCIE0) | (1<<TXEN0) | (1<<RXB80); // Aceita transmissão, e leitura 9º bit
+		UCSR0B =   (1<<TXEN0) ; // Aceita transmissão
 	}
 }
 
@@ -129,13 +129,11 @@ ISR (USART_TX_vect){
 
 void sendSlave1(uint8_t button){
 	transmitMessage(1,1);
-	state = ST_SEND_1;
 	transmitMessage(0,button);
 }
 
 void sendSlave2(uint8_t button){
 	transmitMessage(1,2);
-	state = ST_SEND_2;
 	transmitMessage(0,button);
 }
 
@@ -183,7 +181,7 @@ void enableRead(){
 }
 
 
-void main() {
+int main() {
 	setup();
 	
 	if (address == 0){
@@ -226,5 +224,5 @@ void main() {
 			}
 		}
 	}
-	
+	return 0;
 }
