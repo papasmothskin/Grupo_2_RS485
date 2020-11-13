@@ -22,20 +22,10 @@
 #define ADDR3 PB2
 #define ADDR4 PB3
 
-#define ST_IDLE 0
-#define ST_REC_ADDR 1
-#define ST_REC_DATA 2
-#define ST_IGNORE 3
-
-#define ST_SEND_1 1
-#define ST_SEND_2 2
-#define ST_SEND_DATA 3
-
 #define LOW 0
 #define HIGH 1
 
 uint8_t address = 0;			// Endereço como variável global (0 se master)
-uint8_t state = ST_IDLE;		// Estado da máquina de estados
 uint8_t prev_led_state_1 = LOW;	// Estado anterior do led 1
 uint8_t prev_led_state_2 = LOW;	// Estado anterior do led 2
 
@@ -116,28 +106,28 @@ void transmitMessage(uint8_t is_address, uint8_t value){
 ISR (USART_TX_vect){
 	if (ST_SEND_1){
 		transmitMessage(0, button1);
-		state = ST_SEND_DATA;
+		
 	}
 	else if (ST_SEND_2){
 
-		state = ST_SEND_DATA;
+		
 	}
 	else if (ST_SEND_DATA){
 
 	}
 }*/
 
-void sendSlave1(uint8_t button){
-	transmitMessage(1,1);
+uint8_t prev_sent_addr = 0;
+
+void sendSlave(uint8_t sending_addr, uint8_t button){
+	if (prev_sent_addr != sending_addr){
+		transmitMessage(1, sending_addr);
+		prev_sent_addr = sending_addr;
+	}
 	transmitMessage(0,button);
 }
 
-void sendSlave2(uint8_t button){
-	transmitMessage(1,2);
-	transmitMessage(0,button);
-}
-
-void enableWrite(){
+void enable_USART_write(){
 	PORTC |= (1 << WRITE_ENABLE);
 }
 
@@ -162,21 +152,19 @@ ISR (USART_RX_vect){
 
 	if (is_address){
 		if (result == address){
-			state = ST_REC_DATA;
+			UCSR0A &= ~(1<<MPCM0); // Desativa modo multiprocessor, este slave foi selecionado
 		}
 		else {
-			state = ST_IGNORE;
+			UCSR0A |= (1<<MPCM0); // Reativa modo multiprocessor
 		}
+		
 	}
 	else {
-		if (state == ST_REC_DATA){
-			writeLED(result);
-		}
-		state = ST_IDLE;
+		writeLED(result);
 	}
 }
 
-void enableRead(){
+void enable_USART_read(){
 	PORTC &= ~(1 << WRITE_ENABLE);
 }
 
@@ -187,41 +175,25 @@ int main() {
 	if (address == 0){
 		uint8_t button1;
 		uint8_t button2;
-		enableWrite();
+		enable_USART_write();
 		while(1){
 			button1 = readButton1();
 			button2 = readButton2();
 			
-			/*
-			if (state == ST_SEND_DATA || state == ST_SEND_1 || state == ST_SEND_2){
-
-			}
-			else */
 			if (button1 != prev_led_state_1){
-				sendSlave1(button1);
+				sendSlave(1,button1);
 				prev_led_state_1 = button1;
 			}
 			else if (button2 != prev_led_state_2){
-				sendSlave2(button2);
+				sendSlave(2,button2);
 				prev_led_state_2 = button2;
 			}
 		}
 	}
 	else {
-		state = ST_IDLE;
-		enableRead();
+		enable_USART_read();
 		while(1){
-			switch (state){
-				case ST_IDLE:
-					break;
-				case ST_IGNORE:
-					break;
-				case ST_REC_DATA:
-					break;
-				default:
-					state = ST_IDLE;
-					break;
-			}
+	
 		}
 	}
 	return 0;
