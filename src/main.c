@@ -9,7 +9,7 @@
 #endif
 
 #define BAUD 9600
-#define UBBR_VAL ((F_CPU/(BAUD<<3))-1)
+#define UBBR_VAL ((F_CPU/(BAUD<<4))-1)
 
 
 #define LED PB5
