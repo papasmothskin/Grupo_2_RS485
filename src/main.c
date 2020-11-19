@@ -34,13 +34,14 @@ void init_usart(){
 	UBRR0H = (uint8_t)(UBBR_VAL>>8);
 	UBRR0L = (uint8_t)(UBBR_VAL);
 
-	UCSR0A = (1<<MPCM0); // Modo multiprocessor
+	
 
 	UCSR0C = (7<<UCSZ00) | (3<<UPM00) | (0<<USBS0); // 9-bits, paridade impar, 1 stop bit
 
 	// ler primeiro o endereço para ver se é cliente ou servidor
 	if (address > 0){
 		UCSR0B = (1<<RXCIE0) | (1<<RXEN0); // Aceita receção, e leitura 9º bit
+		UCSR0A = (1<<MPCM0); // Modo multiprocessor
 	}
 	else{
 		UCSR0B =   (1<<TXEN0) ; // Aceita transmissão
