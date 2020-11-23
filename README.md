@@ -8,7 +8,7 @@ EasyEda: https://easyeda.com/editor#id=|9db0600eaf7b4b838ae15ca7e6e2a753|093fb40
 
 Antes de inicializar o UART, faz-se a leitura do endereço do dispositivo. Foi decidido que depois da leitura ser feita não será mais usado
 
-Depois, se a leitura for 0, é o dispositivo mestre. Neste caso, só precisa da transmissão ativa.
+Se a leitura for 0, é o dispositivo mestre. Neste caso, só precisa da transmissão ativa.
 
 Se o endereço for diferente de 0, é um slave, por isso o modo de multiprocessamento é ligado. Para além disso, decidiu-se fazer a receção da informação por interupção em vez de espera continua por receção de nova informação.
 
@@ -22,8 +22,8 @@ Em caso contrário, é enviado antes o frame de endereço com o valor do endere�
 
 ## Receção de dados
 
-O slave está em modo MPCM na inicialização e quando a ultima mensagem não lhe era destinada.
+O slave está em modo MPCM na inicialização e após receber uma mensagem cujo endereço é diferente do seu.
 
 Este funcionamento é inerente ao hardware. Sempre que o slave esteja com este modo ativo, só haverá receção de address frames, sendo os data frames ignorados.
 
-Então, se o slave receber um address frame com o seu endereço, ele desliga o MPCM e ouve pela a informação no canal de comunicação. Os outros slaves vão ignorar estar mensagens de dados. Quando o mestre envia uma mensagem a um novo rementente, este volta envia um address frame com o endereço do novo dispositivo. O dispositivo que estava a ouvir anteriormente reconhece que as mensagens seguintes não são mais para ele e volta a ligar o MPCM.
+Então, se o slave receber um address frame com o seu endereço, ele desliga o MPCM e lê a informação enviada no canal de comunicação. Os outros slaves vão ignorar estar mensagens de dados. Quando o mestre envia uma mensagem a um novo rementente, este volta envia um address frame com o endereço do novo dispositivo. O dispositivo que estava a ouvir anteriormente reconhece que as mensagens seguintes não são mais para ele e volta a ligar o MPCM.
