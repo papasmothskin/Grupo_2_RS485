@@ -9,7 +9,7 @@
 #endif
 
 #define BAUD 9600
-#define UBBR_VAL ((F_CPU/(BAUD<<4))-1)
+#define UBBR_VAL ((F_CPU/(BAUD<<4))-1) // Há problemas com o valor, não é o correto, tarde demais para experimentar algo mais elegante
 
 
 #define LED PB5
@@ -64,6 +64,7 @@ void enable_USART_write(){
 	PORTC |= (1 << WRITE_ENABLE);
 }
 
+// https://exploreembedded.com/wiki/UART_Programming_with_Atmega128
 void init_usart(){
 	// definir baudrate
 	long int MYUBRR=((F_CPU)/(BAUD*16UL)-1);
