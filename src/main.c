@@ -32,11 +32,11 @@ uint8_t prev_led_state_1 = LOW;	// Estado anterior do led 1
 uint8_t prev_led_state_2 = LOW;	// Estado anterior do led 2
 
 void writeLED_H(){
-	PORTB |= (1<<LED);
+	PORTB &= ~(1<<LED);
 }
 
 void writeLED_L(){
-	PORTB &= ~(1<<LED); 
+	PORTB |= (1<<LED);
 }
 
 void writeLED(uint8_t is_high){
@@ -69,7 +69,6 @@ void init_usart(){
 	UBRR0H = (uint8_t)(UBBR_VAL>>8);
 	UBRR0L = (uint8_t)(UBBR_VAL);
 
-	
 	UCSR0C = (3<<UCSZ00); // 8-bits, paridade impar
 	#ifdef PARITY_BIT
 		UCSR0C |= (3<<UPM00); // 1 stop bit
@@ -99,7 +98,9 @@ void setup() {
 
 	readAddress();
 
+	cli();
 	init_usart();
+	writeLED_L();
 	sei();
 }
 
@@ -130,18 +131,19 @@ void sendSlave(uint8_t sending_addr, uint8_t button){
 
 // ############## SLAVE #######################
 
-ISR (USART_RX_vect){
+ISR (USART0_RX_vect){
 
 	unsigned char status, is_address, result_low, result_high;
 	/* Wait for data to be received */
-	while (!(UCSR0A & (1<<RXC0)));
+	// while (!(UCSR0A & (1<<RXC0)));
+
 
 	/* Get status and 9th bit, then data */
 	/* from buffer */
 	status = UCSR0A;
 	result_high = UCSR0B;
 	result_low = UDR0;
-	is_address = result_high & (1<<RXB80);
+	is_address = (result_high>>1) & 0x01;
 
 	/* If error, ... */
 	if (status & ((1<<FE0)|(1<<DOR0)|(1<<UPE0))){
