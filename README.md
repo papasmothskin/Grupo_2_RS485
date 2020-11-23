@@ -10,7 +10,7 @@ Antes de inicializar o UART, faz-se a leitura do endereço do dispositivo. Foi d
 
 Depois, se a leitura for 0, é o dispositivo mestre. Neste caso, só precisa da transmissão ativa.
 
-Se o endereço for diferente de 0, é um slave, por isso o modo de multiprocessamento é ligado. Para além disso, dessidiu-se fazer a receção da informação por interupção em vez de espera continua por receção de nova informação.
+Se o endereço for diferente de 0, é um slave, por isso o modo de multiprocessamento é ligado. Para além disso, decidiu-se fazer a receção da informação por interupção em vez de espera continua por receção de nova informação.
 
 ## Transmissão de dados
 
