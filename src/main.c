@@ -22,6 +22,8 @@
 #define ADDR3 PB2
 #define ADDR4 PB3
 
+// #define PARITY_BIT
+
 #define LOW 0
 #define HIGH 1
 
@@ -68,17 +70,20 @@ void init_usart(){
 	UBRR0L = (uint8_t)(UBBR_VAL);
 
 	
+	UCSR0C = (3<<UCSZ00); // 8-bits, paridade impar
+	#ifdef PARITY_BIT
+		UCSR0C |= (3<<UPM00); // 1 stop bit
+	#endif
+	UCSR0B = (1<<UCSZ02); // Activate 9th bit
 
-	UCSR0C = (7<<UCSZ00) /* | (3<<UPM00) */ | (0<<USBS0); // 9-bits, paridade impar, 1 stop bit
-
-	// ler primeiro o endereço para ver se é cliente ou servidor
+	// ler o endereço para ver se é cliente ou servidor
 	if (address > 0){
-		UCSR0B = (1<<RXCIE0) | (1<<RXEN0); // Aceita receção, e leitura 9º bit
-		UCSR0A = (1<<MPCM0); // Modo multiprocessor
+		UCSR0B |= (1<<RXCIE0) | (1<<RXEN0); // Aceita receção e interrupção
+		UCSR0A |= (1<<MPCM0); // Modo multiprocessor
 		enable_USART_read();
 	}
 	else{
-		UCSR0B =   (1<<TXEN0) ; // Aceita transmissão
+		UCSR0B |= (1<<TXEN0); // Aceita transmissão
 		enable_USART_write();
 	}
 }
@@ -127,15 +132,16 @@ void sendSlave(uint8_t sending_addr, uint8_t button){
 
 ISR (USART_RX_vect){
 
-	unsigned char status, is_address, result;
+	unsigned char status, is_address, result_low, result_high;
 	/* Wait for data to be received */
 	while (!(UCSR0A & (1<<RXC0)));
 
 	/* Get status and 9th bit, then data */
 	/* from buffer */
 	status = UCSR0A;
-	is_address = UCSR0B;
-	result = UDR0;
+	result_high = UCSR0B;
+	result_low = UDR0;
+	is_address = result_high & (1<<RXB80);
 
 	/* If error, ... */
 	if (status & ((1<<FE0)|(1<<DOR0)|(1<<UPE0))){
@@ -143,7 +149,7 @@ ISR (USART_RX_vect){
 	}
 
 	if (is_address){
-		if (result == address){
+		if (result_low == address){
 			UCSR0A &= ~(1<<MPCM0); // Desativa modo multiprocessor, este slave foi selecionado
 		}
 		else {
@@ -152,7 +158,7 @@ ISR (USART_RX_vect){
 		
 	}
 	else {
-		writeLED(result);
+		writeLED(result_low);
 	}
 }
 
