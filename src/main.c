@@ -29,25 +29,6 @@ uint8_t address = 0;			// Endereço como variável global (0 se master)
 uint8_t prev_led_state_1 = LOW;	// Estado anterior do led 1
 uint8_t prev_led_state_2 = LOW;	// Estado anterior do led 2
 
-void init_usart(){
-	// definir baudrate
-	UBRR0H = (uint8_t)(UBBR_VAL>>8);
-	UBRR0L = (uint8_t)(UBBR_VAL);
-
-	
-
-	UCSR0C = (7<<UCSZ00) | (3<<UPM00) | (0<<USBS0); // 9-bits, paridade impar, 1 stop bit
-
-	// ler primeiro o endereço para ver se é cliente ou servidor
-	if (address > 0){
-		UCSR0B = (1<<RXCIE0) | (1<<RXEN0); // Aceita receção, e leitura 9º bit
-		UCSR0A = (1<<MPCM0); // Modo multiprocessor
-	}
-	else{
-		UCSR0B =   (1<<TXEN0) ; // Aceita transmissão
-	}
-}
-
 void writeLED_H(){
 	PORTB |= (1<<LED);
 }
@@ -71,6 +52,35 @@ uint8_t readButton2(){
 
 void readAddress(){
 	address = PINB & ((1<<ADDR1) | (1<<ADDR2) | (1<<ADDR3) | (1<<ADDR4));
+}
+
+void enable_USART_read(){
+	PORTC &= ~(1 << WRITE_ENABLE);
+}
+
+void enable_USART_write(){
+	PORTC |= (1 << WRITE_ENABLE);
+}
+
+void init_usart(){
+	// definir baudrate
+	UBRR0H = (uint8_t)(UBBR_VAL>>8);
+	UBRR0L = (uint8_t)(UBBR_VAL);
+
+	
+
+	UCSR0C = (7<<UCSZ00) /* | (3<<UPM00) */ | (0<<USBS0); // 9-bits, paridade impar, 1 stop bit
+
+	// ler primeiro o endereço para ver se é cliente ou servidor
+	if (address > 0){
+		UCSR0B = (1<<RXCIE0) | (1<<RXEN0); // Aceita receção, e leitura 9º bit
+		UCSR0A = (1<<MPCM0); // Modo multiprocessor
+		enable_USART_read();
+	}
+	else{
+		UCSR0B =   (1<<TXEN0) ; // Aceita transmissão
+		enable_USART_write();
+	}
 }
 
 void setup() {
@@ -103,21 +113,6 @@ void transmitMessage(uint8_t is_address, uint8_t value){
 	UDR0 = value;
 }
 
-/*
-ISR (USART_TX_vect){
-	if (ST_SEND_1){
-		transmitMessage(0, button1);
-		
-	}
-	else if (ST_SEND_2){
-
-		
-	}
-	else if (ST_SEND_DATA){
-
-	}
-}*/
-
 uint8_t prev_sent_addr = 0;
 
 void sendSlave(uint8_t sending_addr, uint8_t button){
@@ -126,10 +121,6 @@ void sendSlave(uint8_t sending_addr, uint8_t button){
 		prev_sent_addr = sending_addr;
 	}
 	transmitMessage(0,button);
-}
-
-void enable_USART_write(){
-	PORTC |= (1 << WRITE_ENABLE);
 }
 
 // ############## SLAVE #######################
@@ -165,18 +156,12 @@ ISR (USART_RX_vect){
 	}
 }
 
-void enable_USART_read(){
-	PORTC &= ~(1 << WRITE_ENABLE);
-}
-
-
 int main() {
 	setup();
 	
 	if (address == 0){
 		uint8_t button1;
 		uint8_t button2;
-		enable_USART_write();
 		while(1){
 			button1 = readButton1();
 			button2 = readButton2();
@@ -192,7 +177,6 @@ int main() {
 		}
 	}
 	else {
-		enable_USART_read();
 		while(1){
 	
 		}
