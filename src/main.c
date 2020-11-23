@@ -66,12 +66,13 @@ void enable_USART_write(){
 
 void init_usart(){
 	// definir baudrate
-	UBRR0H = (uint8_t)(UBBR_VAL>>8);
-	UBRR0L = (uint8_t)(UBBR_VAL);
+	long int MYUBRR=((F_CPU)/(BAUD*16UL)-1);
+	UBRR0H = (uint8_t)(MYUBRR>>8);
+	UBRR0L = (uint8_t)(MYUBRR);
 
-	UCSR0C = (3<<UCSZ00); // 8-bits, paridade impar
+	UCSR0C = (3<<UCSZ00); // 8-bits, 1 stop bit
 	#ifdef PARITY_BIT
-		UCSR0C |= (3<<UPM00); // 1 stop bit
+		UCSR0C |= (3<<UPM00); // paridade impar
 	#endif
 	UCSR0B = (1<<UCSZ02); // Activate 9th bit
 
@@ -100,7 +101,7 @@ void setup() {
 
 	cli();
 	init_usart();
-	writeLED_L();
+	
 	sei();
 }
 
